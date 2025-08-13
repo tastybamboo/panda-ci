@@ -1,0 +1,126 @@
+---
+name: Build and Publish Docker Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/build-and-publish.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - '.github/workflows/build-and-publish.yml'
+  workflow_dispatch:
+    inputs:
+      ruby_versions:
+        description: 'Ruby versions to build (comma-separated, e.g., "3.2,3.3,3.4")'
+        required: false
+        default: '3.2,3.3,3.4'
+  schedule:
+    # Rebuild weekly to get security updates
+    - cron: '0 0 * * 0'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: tastybamboo/panda-ci
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        ruby-version: ${{ fromJson(github.event.inputs.ruby_versions && format('[{0}]', github.event.inputs.ruby_versions) || '["3.2", "3.3", "3.4"]') }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=ruby-${{ matrix.ruby-version }}
+            type=raw,value=ruby-${{ matrix.ruby-version }}-{{date 'YYYYMMDD'}}
+            type=raw,value=latest,enable=${{ matrix.ruby-version == '3.3' }}
+            type=sha,prefix=ruby-${{ matrix.ruby-version }}-,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            RUBY_VERSION=${{ matrix.ruby-version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Test image
+        if: github.event_name != 'pull_request'
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ruby-${{ matrix.ruby-version }} ruby -v
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ruby-${{ matrix.ruby-version }} bundler -v
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:ruby-${{ matrix.ruby-version }} chromium --version
+
+  update-readme:
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update README with latest tags
+        run: |
+          DATE=$(date +'%Y%m%d')
+          cat > TAGS.md << EOF
+          ## Available Tags
+
+          Last updated: $(date +'%Y-%m-%d %H:%M:%S UTC')
+
+          ### Ruby 3.4
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.4\`
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.4-${DATE}\`
+
+          ### Ruby 3.3 (latest)
+          - \`ghcr.io/tastybamboo/panda-ci:latest\`
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.3\`
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.3-${DATE}\`
+
+          ### Ruby 3.2
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.2\`
+          - \`ghcr.io/tastybamboo/panda-ci:ruby-3.2-${DATE}\`
+          EOF
+
+      - name: Commit updates
+        run: |
+          if [[ -n $(git status -s) ]]; then
+            git config --local user.email "actions@github.com"
+            git config --local user.name "GitHub Actions"
+            git add TAGS.md
+            git commit -m "Update available tags [skip ci]"
+            git push
+          fi
