@@ -1,6 +1,6 @@
 ## Available Tags
 
-Last updated: 2025-08-13 00:40:45 UTC
+Last updated: 2025-08-13 00:47:40 UTC
 
 ### Ruby 3.4
 - `ghcr.io/tastybamboo/panda-ci:ruby-3.4`
