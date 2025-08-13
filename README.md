@@ -32,7 +32,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tastybamboo/panda-ci:ruby-3.3
+      image: ghcr.io/tastybamboo/panda-ci:ruby-3.4.5
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
 
 ## 📦 What's Included
 
-- **Ruby versions**: 3.2, 3.3, 3.4
+- **Ruby versions**: 3.2.6, 3.3.7, 3.4.5 (latest)
 - **System packages**:
   - PostgreSQL client
   - ImageMagick & libvips (image processing)
@@ -59,13 +59,13 @@ jobs:
 
 ## 🏷️ Available Tags
 
-- `ghcr.io/tastybamboo/panda-ci:latest` - Ruby 3.3 (recommended)
-- `ghcr.io/tastybamboo/panda-ci:ruby-3.4` - Ruby 3.4
-- `ghcr.io/tastybamboo/panda-ci:ruby-3.3` - Ruby 3.3
-- `ghcr.io/tastybamboo/panda-ci:ruby-3.2` - Ruby 3.2
+- `ghcr.io/tastybamboo/panda-ci:latest` - Ruby 3.4.5 (recommended)
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.4.5` - Ruby 3.4.5
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.3.7` - Ruby 3.3.7
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.2.6` - Ruby 3.2.6
 
 Date-tagged versions are also available for reproducibility:
-- `ghcr.io/tastybamboo/panda-ci:ruby-3.3-20250813`
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.4.5-20250813`
 
 ## 💻 Usage Examples
 
@@ -79,7 +79,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tastybamboo/panda-ci:ruby-3.3
+      image: ghcr.io/tastybamboo/panda-ci:ruby-3.4.5
 
     services:
       postgres:
@@ -112,7 +112,7 @@ jobs:
   test:
     strategy:
       matrix:
-        ruby-version: ['3.2', '3.3', '3.4']
+        ruby-version: ['3.2.6', '3.3.7', '3.4.5']
 
     runs-on: ubuntu-latest
     container:
@@ -130,7 +130,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tastybamboo/panda-ci:ruby-3.3
+      image: ghcr.io/tastybamboo/panda-ci:ruby-3.4.5
 
     steps:
       - uses: actions/checkout@v4
@@ -158,14 +158,14 @@ You can use these images locally for consistent development environments:
 
 ```bash
 # Pull the image
-docker pull ghcr.io/tastybamboo/panda-ci:ruby-3.3
+docker pull ghcr.io/tastybamboo/panda-ci:ruby-3.4.5
 
 # Run tests in a container
-docker run --rm -v $(pwd):/app ghcr.io/tastybamboo/panda-ci:ruby-3.3 \
+docker run --rm -v $(pwd):/app ghcr.io/tastybamboo/panda-ci:ruby-3.4.5 \
   bash -c "bundle install && bundle exec rspec"
 
 # Interactive development
-docker run -it --rm -v $(pwd):/app ghcr.io/tastybamboo/panda-ci:ruby-3.3 bash
+docker run -it --rm -v $(pwd):/app ghcr.io/tastybamboo/panda-ci:ruby-3.4.5 bash
 ```
 
 ## 🔄 Automatic Updates

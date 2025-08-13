@@ -17,9 +17,17 @@ on:
   workflow_dispatch:
     inputs:
       ruby_versions:
-        description: 'Ruby versions to build (comma-separated, e.g., "3.2,3.3,3.4")'
+        description: 'Ruby versions to build (comma-separated, e.g., "3.2.6,3.3.7,3.4.5")'
         required: false
-        default: '3.2,3.3,3.4'
+        default: '3.2.6,3.3.7,3.4.5'
+      platforms:
+        description: 'Platforms to build for'
+        required: false
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/amd64,linux/arm64'
   schedule:
     # Rebuild weekly to get security updates
     - cron: '0 0 * * 0'
@@ -36,7 +44,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        ruby-version: ${{ fromJson(github.event.inputs.ruby_versions && format('[{0}]', github.event.inputs.ruby_versions) || '["3.2", "3.3", "3.4"]') }}
+        ruby-version: ${{ fromJson(github.event.inputs.ruby_versions && format('[{0}]', github.event.inputs.ruby_versions) || '["3.2.6", "3.3.7", "3.4.5"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -60,10 +68,14 @@ jobs:
           tags: |
             type=raw,value=ruby-${{ matrix.ruby-version }}
             type=raw,value=ruby-${{ matrix.ruby-version }}-{{date 'YYYYMMDD'}}
-            type=raw,value=latest,enable=${{ matrix.ruby-version == '3.3' }}
+            type=raw,value=latest,enable=${{ matrix.ruby-version == '3.4.5' }}
             type=sha,prefix=ruby-${{ matrix.ruby-version }}-,format=short
 
       - name: Build and push Docker image
+        # Platform strategy:
+        # - Push/PR: amd64 only (fast, for CI)
+        # - Manual: configurable via input
+        # - Weekly: both amd64 and arm64 (for local dev)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -74,7 +86,7 @@ jobs:
             RUBY_VERSION=${{ matrix.ruby-version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.platforms || (github.event_name == 'schedule' && 'linux/amd64,linux/arm64' || 'linux/amd64') }}
 
       - name: Test image
         if: github.event_name != 'pull_request'
