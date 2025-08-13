@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y \
     libxslt1-dev \
     # For pg gem
     libpq-dev \
+    # For psych gem (YAML parsing)
+    libyaml-dev \
     # Browser testing dependencies
     chromium \
     chromium-driver \
