@@ -1,4 +1,4 @@
-# Panda GitHub Actions
+# Panda CI
 
 Pre-built Docker images for Panda project CI/CD pipelines. These images include all common dependencies needed for testing Panda CMS, Panda Core, and Panda Editor, significantly reducing CI setup time.
 
@@ -254,4 +254,4 @@ Copyright 2024-2025 Otaina Limited. Available under the BSD 3-Clause License.
 
 ## 📞 Support
 
-For issues or questions, please [open an issue](https://github.com/tastybamboo/panda-github-actions/issues).
+For issues or questions, please [open an issue](https://github.com/tastybamboo/panda-ci/issues).

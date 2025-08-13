@@ -84,7 +84,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD ruby -v || exit 1
 
 # Labels for GitHub Container Registry
-LABEL org.opencontainers.image.source="https://github.com/tastybamboo/panda-github-actions"
+LABEL org.opencontainers.image.source="https://github.com/tastybamboo/panda-ci"
 LABEL org.opencontainers.image.description="CI/CD environment for Panda projects"
 LABEL org.opencontainers.image.licenses="BSD-3-Clause"
 LABEL maintainer="Otaina Limited"
