@@ -32,6 +32,8 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     # For psych gem (YAML parsing)
     libyaml-dev \
+    # For rbnacl gem (used by JWT/OAuth)
+    libsodium-dev \
     # Browser testing dependencies
     chromium \
     chromium-driver \
