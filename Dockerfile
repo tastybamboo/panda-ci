@@ -39,9 +39,15 @@ RUN apt-get update && apt-get install -y \
     # Additional utilities
     sudo \
     locales \
+    # Python for yamllint
+    python3 \
+    python3-pip \
     # Clean up
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+
+# Install yamllint via pip
+RUN pip3 install --no-cache-dir yamllint
 
 # Generate locale
 RUN locale-gen en_US.UTF-8
