@@ -2,6 +2,16 @@
 
 Pre-built Docker images for Panda project CI/CD pipelines. These images include all common dependencies needed for testing Panda CMS, Panda Core, and Panda Editor, significantly reducing CI setup time.
 
+## 📦 Docker Images
+
+Images are available at: `ghcr.io/tastybamboo/panda-ci`
+
+To view available images:
+```bash
+# View all available tags
+gh api /orgs/tastybamboo/packages/container/panda-ci/versions --jq '.[].metadata.container.tags[]' | sort -u
+```
+
 ## 🚀 Quick Start
 
 Replace your GitHub Actions job configuration:
@@ -59,13 +69,23 @@ jobs:
 
 ## 🏷️ Available Tags
 
-- `ghcr.io/tastybamboo/panda-ci:latest` - Ruby 3.4.5 (recommended)
+### Latest (Recommended)
+- `ghcr.io/tastybamboo/panda-ci:latest` - Ruby 3.4.5 (amd64 + arm64)
+
+### By Ruby Version
 - `ghcr.io/tastybamboo/panda-ci:ruby-3.4.5` - Ruby 3.4.5
 - `ghcr.io/tastybamboo/panda-ci:ruby-3.3.7` - Ruby 3.3.7
 - `ghcr.io/tastybamboo/panda-ci:ruby-3.2.6` - Ruby 3.2.6
 
-Date-tagged versions are also available for reproducibility:
+### Architecture Support
+- **Daily/Push builds**: `linux/amd64` only (optimized for CI speed)
+- **Weekly/Manual builds**: `linux/amd64` + `linux/arm64` (for local development on Apple Silicon)
+
+### Date-Tagged Versions
+For reproducible builds:
 - `ghcr.io/tastybamboo/panda-ci:ruby-3.4.5-20250813`
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.3.7-20250813`
+- `ghcr.io/tastybamboo/panda-ci:ruby-3.2.6-20250813`
 
 ## 💻 Usage Examples
 
