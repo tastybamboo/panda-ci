@@ -10,6 +10,8 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
+  workflows: write
 
 jobs:
   check-updates:
@@ -200,7 +202,10 @@ jobs:
         if: steps.changes.outputs.has_changes == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # Note: Use a PAT with workflow permissions if GITHUB_TOKEN fails
+          # Create a PAT at https://github.com/settings/tokens with 'repo' and 'workflow' scopes
+          # Add it as a secret named WORKFLOW_UPDATE_TOKEN
+          token: ${{ secrets.WORKFLOW_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           commit-message: |
             chore: Update Ruby and Bundler versions
 

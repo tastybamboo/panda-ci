@@ -216,6 +216,22 @@ To manually trigger an update check:
 gh workflow run check-updates.yml
 ```
 
+#### Setup Requirements
+
+For the automated updates to work properly, you need to:
+
+1. **Create a Personal Access Token (PAT)** with `repo` and `workflow` permissions:
+   - Go to https://github.com/settings/tokens
+   - Generate a new token (classic) with `repo` and `workflow` scopes
+   - Name it something like "Workflow Update Token"
+
+2. **Add the PAT as a repository secret**:
+   - Go to Settings → Secrets and variables → Actions
+   - Add a new secret named `WORKFLOW_UPDATE_TOKEN`
+   - Paste your PAT as the value
+
+This is required because GitHub restricts the default `GITHUB_TOKEN` from modifying workflow files for security reasons.
+
 ## 🛠️ Building Custom Images
 
 If you need to customize the image:
