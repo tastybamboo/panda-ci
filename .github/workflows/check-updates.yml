@@ -1,0 +1,234 @@
+---
+name: Check for Ruby and Bundler Updates
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Check for Ruby and Bundler updates
+        id: check
+        run: |
+          # Get current Ruby versions from the workflow
+          CURRENT_RUBY_VERSIONS=$(grep -E '^\s*ruby-version:.*\[' .github/workflows/build-and-publish.yml | head -1 | sed 's/.*\[\(.*\)\].*/\1/' | sed 's/"//g' | tr ',' ' ')
+          echo "Current Ruby versions: $CURRENT_RUBY_VERSIONS"
+
+          # Get current Bundler version from Dockerfile
+          CURRENT_BUNDLER=$(grep 'bundler:' Dockerfile | sed 's/.*bundler:\([0-9.]*\).*/\1/')
+          echo "Current Bundler version: $CURRENT_BUNDLER"
+
+          # Fetch latest Ruby versions from ruby-lang.org
+          echo "Fetching latest Ruby versions..."
+
+          # Download the Ruby index file
+          curl -s https://cache.ruby-lang.org/pub/ruby/index.txt > ruby_index.txt
+          # Find latest patch versions for each minor version we care about
+          LATEST_32=$(grep -E 'ruby-3\.2\.[0-9]+\.tar\.gz' ruby_index.txt | sed 's/.*ruby-\(3\.2\.[0-9]*\)\.tar\.gz.*/\1/' | sort -V | tail -1)
+          LATEST_33=$(grep -E 'ruby-3\.3\.[0-9]+\.tar\.gz' ruby_index.txt | sed 's/.*ruby-\(3\.3\.[0-9]*\)\.tar\.gz.*/\1/' | sort -V | tail -1)
+          LATEST_34=$(grep -E 'ruby-3\.4\.[0-9]+\.tar\.gz' ruby_index.txt | sed 's/.*ruby-\(3\.4\.[0-9]*\)\.tar\.gz.*/\1/' | sort -V | tail -1)
+
+          echo "Latest Ruby 3.2: $LATEST_32"
+          echo "Latest Ruby 3.3: $LATEST_33"
+          echo "Latest Ruby 3.4: $LATEST_34"
+
+          # Fetch latest Bundler version from RubyGems API
+          echo "Fetching latest Bundler version..."
+          LATEST_BUNDLER=$(curl -s https://rubygems.org/api/v1/gems/bundler.json | jq -r '.version')
+          echo "Latest Bundler version: $LATEST_BUNDLER"
+
+          # Check if updates are needed
+          UPDATES_NEEDED=false
+          UPDATE_MESSAGE=""
+
+          # Extract current versions for comparison
+          CURRENT_32=$(echo "$CURRENT_RUBY_VERSIONS" | grep -o '3\.2\.[0-9]*' | head -1)
+          CURRENT_33=$(echo "$CURRENT_RUBY_VERSIONS" | grep -o '3\.3\.[0-9]*' | head -1)
+          CURRENT_34=$(echo "$CURRENT_RUBY_VERSIONS" | grep -o '3\.4\.[0-9]*' | head -1)
+
+          # Check Ruby 3.2
+          if [ -n "$LATEST_32" ] && [ "$CURRENT_32" != "$LATEST_32" ]; then
+            UPDATES_NEEDED=true
+            UPDATE_MESSAGE="${UPDATE_MESSAGE}- Ruby 3.2: $CURRENT_32 → $LATEST_32\n"
+          fi
+
+          # Check Ruby 3.3
+          if [ -n "$LATEST_33" ] && [ "$CURRENT_33" != "$LATEST_33" ]; then
+            UPDATES_NEEDED=true
+            UPDATE_MESSAGE="${UPDATE_MESSAGE}- Ruby 3.3: $CURRENT_33 → $LATEST_33\n"
+          fi
+
+          # Check Ruby 3.4 (only if it exists)
+          if [ -n "$LATEST_34" ]; then
+            if [ -z "$CURRENT_34" ]; then
+              # New minor version available
+              UPDATES_NEEDED=true
+              UPDATE_MESSAGE="${UPDATE_MESSAGE}- Ruby 3.4: new version available → $LATEST_34\n"
+            elif [ "$CURRENT_34" != "$LATEST_34" ]; then
+              UPDATES_NEEDED=true
+              UPDATE_MESSAGE="${UPDATE_MESSAGE}- Ruby 3.4: $CURRENT_34 → $LATEST_34\n"
+            fi
+          fi
+
+          # Check Bundler version
+          if [ -n "$LATEST_BUNDLER" ] && [ "$CURRENT_BUNDLER" != "$LATEST_BUNDLER" ]; then
+            # Compare versions properly
+            CURRENT_MAJOR=$(echo $CURRENT_BUNDLER | cut -d. -f1)
+            CURRENT_MINOR=$(echo $CURRENT_BUNDLER | cut -d. -f2)
+            CURRENT_PATCH=$(echo $CURRENT_BUNDLER | cut -d. -f3)
+            LATEST_MAJOR=$(echo $LATEST_BUNDLER | cut -d. -f1)
+            LATEST_MINOR=$(echo $LATEST_BUNDLER | cut -d. -f2)
+            LATEST_PATCH=$(echo $LATEST_BUNDLER | cut -d. -f3)
+            if [ "$LATEST_MAJOR" -gt "$CURRENT_MAJOR" ] || \
+               [ "$LATEST_MAJOR" -eq "$CURRENT_MAJOR" -a "$LATEST_MINOR" -gt "$CURRENT_MINOR" ] || \
+               [ "$LATEST_MAJOR" -eq "$CURRENT_MAJOR" -a "$LATEST_MINOR" -eq "$CURRENT_MINOR" -a "$LATEST_PATCH" -gt "$CURRENT_PATCH" ]; then
+              UPDATES_NEEDED=true
+              UPDATE_MESSAGE="${UPDATE_MESSAGE}- Bundler: $CURRENT_BUNDLER → $LATEST_BUNDLER\n"
+            fi
+          fi
+
+          # Save results
+          echo "UPDATES_NEEDED=$UPDATES_NEEDED" >> $GITHUB_OUTPUT
+          echo "UPDATE_MESSAGE<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$UPDATE_MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "LATEST_32=$LATEST_32" >> $GITHUB_OUTPUT
+          echo "LATEST_33=$LATEST_33" >> $GITHUB_OUTPUT
+          echo "LATEST_34=$LATEST_34" >> $GITHUB_OUTPUT
+          echo "LATEST_BUNDLER=$LATEST_BUNDLER" >> $GITHUB_OUTPUT
+
+      - name: Update files if needed
+        if: steps.check.outputs.UPDATES_NEEDED == 'true'
+        run: |
+          # Update Ruby versions in build-and-publish.yml
+          LATEST_32="${{ steps.check.outputs.LATEST_32 }}"
+          LATEST_33="${{ steps.check.outputs.LATEST_33 }}"
+          LATEST_34="${{ steps.check.outputs.LATEST_34 }}"
+          LATEST_BUNDLER="${{ steps.check.outputs.LATEST_BUNDLER }}"
+
+          # Build the Ruby versions array and CSV string
+          RUBY_ARRAY=""
+          RUBY_CSV=""
+          if [ -n "$LATEST_32" ]; then
+            RUBY_ARRAY="\"$LATEST_32\""
+            RUBY_CSV="$LATEST_32"
+          fi
+          
+          if [ -n "$LATEST_33" ]; then
+            if [ -n "$RUBY_ARRAY" ]; then
+              RUBY_ARRAY="$RUBY_ARRAY, \"$LATEST_33\""
+              RUBY_CSV="$RUBY_CSV,$LATEST_33"
+            else
+              RUBY_ARRAY="\"$LATEST_33\""
+              RUBY_CSV="$LATEST_33"
+            fi
+          fi
+          
+          if [ -n "$LATEST_34" ]; then
+            if [ -n "$RUBY_ARRAY" ]; then
+              RUBY_ARRAY="$RUBY_ARRAY, \"$LATEST_34\""
+              RUBY_CSV="$RUBY_CSV,$LATEST_34"
+            else
+              RUBY_ARRAY="\"$LATEST_34\""
+              RUBY_CSV="$LATEST_34"
+            fi
+          fi
+
+          # Determine the latest stable version for the 'latest' tag
+          if [ -n "$LATEST_34" ]; then
+            LATEST_VERSION="$LATEST_34"
+          elif [ -n "$LATEST_33" ]; then
+            LATEST_VERSION="$LATEST_33"
+          else
+            LATEST_VERSION="$LATEST_32"
+          fi
+
+          # Create a temporary file with the updated workflow
+          cp .github/workflows/build-and-publish.yml .github/workflows/build-and-publish.yml.tmp
+          
+          # Update the default input value for manual runs
+          sed -i "s/default: '[^']*'/default: '$RUBY_CSV'/" .github/workflows/build-and-publish.yml.tmp
+          
+          # Update the matrix array
+          sed -i "s/\[\"[0-9.]*\", \"[0-9.]*\", \"[0-9.]*\"\]/[$RUBY_ARRAY]/" .github/workflows/build-and-publish.yml.tmp
+          
+          # Update the latest tag condition
+          sed -i "s/matrix.ruby-version == '[0-9.]*'/matrix.ruby-version == '$LATEST_VERSION'/" .github/workflows/build-and-publish.yml.tmp
+          
+          # Move the temp file back
+          mv .github/workflows/build-and-publish.yml.tmp .github/workflows/build-and-publish.yml
+
+          # Update Bundler version in Dockerfile
+          sed -i "s/bundler:[0-9.]*/bundler:$LATEST_BUNDLER/" Dockerfile
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Merge main branch
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git merge origin/main --no-edit || true
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            chore: Update Ruby and Bundler versions
+
+            ${{ steps.check.outputs.UPDATE_MESSAGE }}
+
+            This is an automated update to keep the CI environment current with the latest stable releases.
+          branch: automated/update-ruby-bundler
+          delete-branch: true
+          title: "chore: Update Ruby and Bundler versions"
+          body: |
+            ## 🤖 Automated Dependency Update
+
+            This PR updates the following versions:
+
+            ${{ steps.check.outputs.UPDATE_MESSAGE }}
+
+            ### Changes Made:
+            - Updated Ruby versions in `.github/workflows/build-and-publish.yml`
+            - Updated Bundler version in `Dockerfile`
+
+            ### Checklist:
+            - [ ] Review the version changes
+            - [ ] Verify CI builds pass with new versions
+            - [ ] Ensure no breaking changes in minor/patch updates
+
+            ---
+            *This PR was automatically generated by the daily update check workflow.*
+          labels: |
+            dependencies
+            automated
+          assignees: ${{ github.repository_owner }}

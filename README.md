@@ -196,6 +196,26 @@ The images are automatically rebuilt:
 - Weekly (Sunday at midnight UTC) for security updates
 - On-demand via workflow dispatch
 
+### Automated Dependency Updates
+
+This repository includes automated dependency management:
+
+- **Daily checks** for new Ruby and Bundler versions (2 AM UTC)
+- **Automatic PR creation** when updates are available
+- **Version tracking** for Ruby 3.2.x, 3.3.x, and 3.4.x patch releases
+- **Smart updates** that maintain compatibility while getting latest patches
+
+The automated update workflow:
+1. Checks ruby-lang.org for latest Ruby patch versions
+2. Checks RubyGems for latest Bundler version
+3. Creates a PR with updates if newer versions are found
+4. Merges main branch before pushing to ensure clean PR
+
+To manually trigger an update check:
+```bash
+gh workflow run check-updates.yml
+```
+
 ## 🛠️ Building Custom Images
 
 If you need to customize the image:
