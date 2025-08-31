@@ -19,11 +19,11 @@ on:
       ruby_versions:
         description: 'Ruby versions to build (comma-separated, e.g., "3.2.6,3.3.7,3.4.5")'
         required: false
-        default: '3.2.6,3.3.7,3.4.5'
+        default: '3.2.9,3.3.9,3.4.5'
       platforms:
         description: 'Platforms to build for'
         required: false
-        default: 'linux/amd64'
+        default: '3.2.9,3.3.9,3.4.5'
         type: choice
         options:
           - 'linux/amd64'
@@ -44,7 +44,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        ruby-version: ${{ fromJson(github.event.inputs.ruby_versions && format('[{0}]', github.event.inputs.ruby_versions) || '["3.2.6", "3.3.7", "3.4.5"]') }}
+        ruby-version: ${{ fromJson(github.event.inputs.ruby_versions && format('[{0}]', github.event.inputs.ruby_versions) || '["3.2.9", "3.3.9", "3.4.5"]') }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
