@@ -131,7 +131,7 @@ jobs:
             RUBY_ARRAY="\"$LATEST_32\""
             RUBY_CSV="$LATEST_32"
           fi
-          
+
           if [ -n "$LATEST_33" ]; then
             if [ -n "$RUBY_ARRAY" ]; then
               RUBY_ARRAY="$RUBY_ARRAY, \"$LATEST_33\""
@@ -141,7 +141,7 @@ jobs:
               RUBY_CSV="$LATEST_33"
             fi
           fi
-          
+
           if [ -n "$LATEST_34" ]; then
             if [ -n "$RUBY_ARRAY" ]; then
               RUBY_ARRAY="$RUBY_ARRAY, \"$LATEST_34\""
@@ -163,16 +163,16 @@ jobs:
 
           # Create a temporary file with the updated workflow
           cp .github/workflows/build-and-publish.yml .github/workflows/build-and-publish.yml.tmp
-          
+
           # Update the default input value for manual runs
           sed -i "s/default: '[^']*'/default: '$RUBY_CSV'/" .github/workflows/build-and-publish.yml.tmp
-          
+
           # Update the matrix array
           sed -i "s/\[\"[0-9.]*\", \"[0-9.]*\", \"[0-9.]*\"\]/[$RUBY_ARRAY]/" .github/workflows/build-and-publish.yml.tmp
-          
+
           # Update the latest tag condition
           sed -i "s/matrix.ruby-version == '[0-9.]*'/matrix.ruby-version == '$LATEST_VERSION'/" .github/workflows/build-and-publish.yml.tmp
-          
+
           # Move the temp file back
           mv .github/workflows/build-and-publish.yml.tmp .github/workflows/build-and-publish.yml
 
