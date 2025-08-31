@@ -164,13 +164,14 @@ jobs:
           # Create a temporary file with the updated workflow
           cp .github/workflows/build-and-publish.yml .github/workflows/build-and-publish.yml.tmp
 
-          # Update the default input value for manual runs
-          sed -i "s/default: '[^']*'/default: '$RUBY_CSV'/" .github/workflows/build-and-publish.yml.tmp
+          # Update the default input value for manual runs (line 22)
+          sed -i "s/default: '[0-9.,]*'/default: '$RUBY_CSV'/" .github/workflows/build-and-publish.yml.tmp
 
-          # Update the matrix array
-          sed -i "s/\[\"[0-9.]*\", \"[0-9.]*\", \"[0-9.]*\"\]/[$RUBY_ARRAY]/" .github/workflows/build-and-publish.yml.tmp
+          # Update the matrix array - need to update the JSON array in the fromJson expression (line 47)
+          # This matches the pattern in the || fallback: '["3.2.6", "3.3.7", "3.4.5"]'
+          sed -i "s/'\\[\"[0-9.]*\", \"[0-9.]*\", \"[0-9.]*\"\\]'/'[$RUBY_ARRAY]'/g" .github/workflows/build-and-publish.yml.tmp
 
-          # Update the latest tag condition
+          # Update the latest tag condition (line 71)
           sed -i "s/matrix.ruby-version == '[0-9.]*'/matrix.ruby-version == '$LATEST_VERSION'/" .github/workflows/build-and-publish.yml.tmp
 
           # Move the temp file back
