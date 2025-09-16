@@ -58,7 +58,7 @@ ENV CHROME_BIN=/usr/bin/chromium
 ENV CHROMIUM_FLAGS="--no-sandbox --headless --disable-gpu --disable-dev-shm-usage"
 
 # Install specific bundler version that matches your Gemfile.lock
-RUN gem install bundler:2.7.1
+RUN gem install bundler:2.7.2
 
 # Create a non-root user for running tests (optional but recommended)
 RUN useradd -m -s /bin/bash panda && \
